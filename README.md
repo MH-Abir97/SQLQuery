@@ -70,5 +70,18 @@ FROM MERC_OrderBookingMaster A,MERC_DyeingBookingMaster B where A.ID=B.OrderId
 ```
 select V.EmpName,V.Designation,US.ID UIDs,V.Email from ADM_User US INNER JOIn vw_All_EmployeeInformation V ON V.EmpId=US.EmpId   
 ```
+
+# Diffrent Type Join
+
+```
+select A.*,CT.Line,CT.Date,ISNULL(CT.Production,0) Production,CT.ID
+                        from (
+								SELECT A.ID ColorID,M.JobNo,BR.Name BuyerName,A.StyleNumber, A.StyleName,ColorCode, ColorName,ColorOrderqty
+								,'' ItemName,M.ShipDate,M.OrderNo
+								FROM MERC_OrderBookingMaster M,MERC_OrderBookingDetails A,MERC_BuyerInformation BR 
+								where  M.ID=A.RefId and BR.ID=M.BuyerId 
+                        ) A left outer join (select CT.ID,CT.ColorId,CT.Date,CT.Production,LN.Line from Prd_DailyCarton CT,HR_Line LN where LN.ID=CT.LineId) 
+                        CT on CT.ColorId=A.ColorID  
+```
 						   
                            
