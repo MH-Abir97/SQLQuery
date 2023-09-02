@@ -58,3 +58,13 @@ FROM MERC_OrderBookingMaster A,MERC_DyeingBookingMaster B where A.ID=B.OrderId
 	                left outer Join MERC_Supplier D on D.ID=A.SupplierId
                 )x where 1=1 
 ```
+						
+# INNER JOIN AND WHERE Condition 
+
+                               ```              Select UDD.EmpName, B.CreatedBy from MERC_KinttingSheetMaster B LEFT outer JOIN(
+						select V.EmpName,V.Designation,US.ID UIDs,V.Email from ADM_User US INNER JOIN vw_All_EmployeeInformation V ON V.EmpId=US.EmpId) UDD 
+						ON UDD.UIDs=B.CreatedBy 
+
+
+						select V.EmpName,V.Designation,US.ID UIDs,V.Email from ADM_User US INNER JOIn vw_All_EmployeeInformation V ON V.EmpId=US.EmpId      
+                                 ```
