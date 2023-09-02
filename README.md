@@ -40,3 +40,14 @@ AND a.JobNo > 0
 AND b.ID is not null
 AND ISNULL(b.ColorOrderqty,0) > ISNULL(d.POQty,0) 
 ```
+
+#Iner join OR Where Condition
+```
+SELECT A.ID,JobNo,BuyingHouseID, BuyerId, Year, Month, OrderNo, PartOrSet, Season, Department, OrderQty, Consumption,
+ AppxGrey, UnitPrice, TotalPrice, HourlyProduction, PcsCompare, Comparison, 
+StyleName, StyleDesc, Fabrication, OrderGsm, Kimboll, Country, Lot,LcNumber, LcRecvStat, Opd, ShipDate, PrintColor, 
+PrintEffect, Varient, A.Remarks, PPApp, DngPerm, OpdWeek, ShiptWeek,ImageName,
+A.ApproveStatus,DeleteStatus, CreatedBy, CreatedDate, UpdatedBy, UpdatedDate 
+,B.BookingDate,B.Remarks
+FROM MERC_OrderBookingMaster A,MERC_DyeingBookingMaster B where A.ID=B.OrderId 
+```
