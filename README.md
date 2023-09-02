@@ -49,3 +49,12 @@ SELECT A.ID
 ,BuyerId
 FROM MERC_OrderBookingMaster A,MERC_DyeingBookingMaster B where A.ID=B.OrderId 
 ```
+# SQL SELECT Query inside Join
+
+```
+                select * from (select A.*,B.Name BuyerName,C.QueryID QueryNo,D.Name SupplierName from Merc_FabricBookingMaster A
+	                left outer Join MERC_BuyerInformation B on A.BuyerId=B.ID
+	                left outer Join MERC_QuerySheetMaster C on A.QueryId=C.Id
+	                left outer Join MERC_Supplier D on D.ID=A.SupplierId
+                )x where 1=1 
+```
