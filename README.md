@@ -85,5 +85,34 @@ select V.EmpName,V.Designation,US.ID UIDs,V.Email from ADM_User US INNER JOIn vw
                         ) A left outer join (select CT.ID,CT.ColorId,CT.Date,CT.Production,LN.Line from Prd_DailyCarton CT,HR_Line LN where LN.ID=CT.LineId) 
                         CT on CT.ColorId=A.ColorID  
 ```
+
+
+# Multiple Comma separator Join
+
+```
+SELECT
+    PCBM.ID AS BatchID,
+    PCBM.BatchNo,
+    PCBM.AreaId,
+    PCBM.StoreId,
+    PCBM.BatchDate,
+    PCBM.BatchStatus,
+    PCBM.Currency,
+    PCBM.ConvRate,
+    PCBM.CreatedBy,
+    PCBM.CreatedTime,
+    PCBM.AskPriceLastDate,
+    PCBM.ApRefId,
+    PCBM.ApStatus,
+    PCBM.CompanyId,
+    PCBM.SupplierIds,
+    PCBM.Remarks,
+    PS.SupplierName,  -- Replace with the actual column name for the supplier name in your PUR_Supplier table
+    PS.SupplierAddress -- Replace with the actual column name for the supplier address in your PUR_Supplier table
+FROM Pur_CsBatchMaster PCBM
+LEFT JOIN PUR_Supplier PS
+    ON PCBM.SupplierIds LIKE CONCAT('%', PS.SupplierID, '%')
+WHERE PCBM.BatchStatus = 'Approved';
+```
 						   
                            
