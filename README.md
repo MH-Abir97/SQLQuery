@@ -114,5 +114,29 @@ LEFT JOIN PUR_Supplier PS
     ON PCBM.SupplierIds LIKE CONCAT('%', PS.SupplierID, '%')
 WHERE PCBM.BatchStatus = 'Approved';
 ```
+# Multiple Comma separator string Split
+
+```
+SELECT CSM.ID, CSM.BatchNo, CSM.AreaId,
+CSM.StoreId,
+CSM.BatchDate,
+CSM.BatchStatus,
+CSM.Currency,
+CSM.ConvRate,
+CSM.CreatedBy, 
+CSM.CreatedTime,
+CSM.AskPriceLastDate,
+CSM.ApRefId,
+CSM.ApStatus,
+CSM.CompanyId,
+CSM.SupplierIds,
+CSM.Remarks,
+CSM.DocFor 
+, (select StoreName from INV_StoreName x where x.ID = CSM.StoreId) StoreName
+, (select Name from HR_Orgination x where x.ID = CSM.CompanyId) CompanyName
+, CASE WHEN ISNULL(CSM.SupplierIds, '0') = '0' THEN '' ELSE STUFF((SELECT '; ' + sn.SupplierName FROM PUR_Supplier sn
+WHERE sn.ID in ( SELECT value FROM STRING_SPLIT(CSM.SupplierIds, ',') ) FOR XML PATH('')), 1, 1, '') END AS SupplierName
+FROM Pur_CsBatchMaster CSM
+```
 						   
                            
