@@ -138,5 +138,175 @@ CSM.DocFor
 WHERE sn.ID in ( SELECT value FROM STRING_SPLIT(CSM.SupplierIds, ',') ) FOR XML PATH('')), 1, 1, '') END AS SupplierName
 FROM Pur_CsBatchMaster CSM
 ```
+
+```
+
+# Gendral Query
+Select a.ID BuyerMasterId, b.ID SCId, b.Beneficiary BeneficiaryId,c.Name BeneficiaryName,b.BuyerName BuyerId,
+            d.Name BuyerName,b.AmenSL SCNO,b.Currency CurrencyId,e.Currency CurrencyName,b.LineBank LineBankId,
+            f.BankName LineBankName, 
+			a.DocSubmitToBuyerNoSys DocSubmitToBuyerNoSys,a.SubmissionDate
+			,g.Price,
+			h.BLCargoAWBNo,h.BLCargoAWBDate,h.InvoiceNo,h.InvoiceDate,
+			i.JobNo
+			from Comm_Export_DocSubmitToBuyerMaster a
+            left join Comm_Export_SalesContract b ON a.SCId=b.ID
+            left join HR_Orgination c ON a.Beneficiary = c.ID
+            left join MERC_BuyerInformation d ON a.BuyerName = d.ID
+            left join Comm_Currency e ON b.Currency = e.ID
+            left join Comm_Bank f ON b.LineBank=f.ID
+            left join (
+            Select RefId,Sum(CAST(isnull(InvoiceValue,0) AS DECIMAL(18, 4))) Price 
+            from Comm_Export_DocSubmitToBuyerDetails
+            Group by RefId
+            ) g ON g.RefId = a.ID
+			left join (
+			Select a.RefId,STRING_AGG(b.BLCargoAWBNo,', ') as BLCargoAWBNo,
+			STRING_AGG(b.BLCargoAWBDate,', ') as BLCargoAWBDate
+			,STRING_AGG(b.InvoiceNo,', ') as InvoiceNo,STRING_AGG(b.InvoiceDate,', ') as InvoiceDate
+			from Comm_Export_DocSubmitToBuyerDetails a 
+			left join Comm_Export_ExportInvoiceMaster b ON a.invoiceId=b.ID
+			group by a.RefId
+			)h ON h.RefId=a.ID
+			left join (
+			Select a.RefId,STRING_AGG(c.JobNo,', ') as JobNo   
+			from Comm_Export_DocSubmitToBuyerDetails a 
+			left join Comm_Export_ExportInvoiceMaster b ON a.invoiceId=b.ID
+			left join Comm_Export_ExportInvoiceDtl c ON b.ID = c.RefId
+			where CAST(isnull(c.POQty,0) AS int) > 0 
+			group by a.RefId
+			) i ON i.RefId=a.ID
+            Where 1=1   And 
+			a.ID IN ('7DB4FD22-63D5-4AA5-B81C-DAAF4DFBC18C','4618736F-5A42-4CCC-8AD7-EC6B05BBBA44') 
+			order by CONVERT(DATETIME, a.SubmissionDate,103)
+
+			  Select RefId,Sum(CAST(isnull(InvoiceValue,0) AS DECIMAL(18, 4))) Price 
+            from Comm_Export_DocSubmitToBuyerDetails
+            Group by RefId
+			
+            Select a.ID BuyerMasterId, b.ID SCId, b.Beneficiary BeneficiaryId,c.Name BeneficiaryName,b.BuyerName BuyerId,
+            d.Name BuyerName,b.AmenSL SCNO,b.Currency CurrencyId,e.Currency CurrencyName,b.LineBank LineBankId,
+            f.BankName LineBankName, 
+			a.DocSubmitToBuyerNoSys DocSubmitToBuyerNoSys,a.SubmissionDate
+			--,g.Price,
+			--h.BLCargoAWBNo,h.BLCargoAWBDate,h.InvoiceNo,h.InvoiceDate,
+			--i.JobNo
+			,i.Price
+			,i.RefId
+			,j.JobNo
+			from Comm_Export_DocSubmitToBuyerMaster a
+            left join Comm_Export_SalesContract b ON a.SCId=b.ID
+            left join HR_Orgination c ON a.Beneficiary = c.ID
+            left join MERC_BuyerInformation d ON a.BuyerName = d.ID
+            left join Comm_Currency e ON b.Currency = e.ID
+            left join Comm_Bank f ON b.LineBank=f.ID
+			left join (SELECT CDD.RefId,Sum(CAST(isnull(InvoiceValue,0) AS DECIMAL(18, 4))) Price
+			FROM Comm_Export_DocSubmitToBuyerDetails CDD Group BY CDD.RefId)i  ON i.RefId=a.ID
+			LEFT JOIN (
+			SELECT a.RefId,STRING_AGG(c.JobNo,',') as JobNo    FROM  Comm_Export_DocSubmitToBuyerDetails a 
+			LEFT JOIN Comm_Export_ExportInvoiceMaster b ON a.invoiceId=b.ID
+			LEFT JOIN Comm_Export_ExportInvoiceDtl c    ON c.RefId=b.ID
+			WHERE CAST(ISNULL(c.POQty,0) AS INT) > 0
+			GROUP BY a.RefId ) j ON j.RefId=a.ID
+
+
+# TempTable Query
+----- Create Price TempTable ====>>
+
+Create Table #TempPrice(RefId uniqueidentifier, Price DECIMAL(18, 4))
+INSERT INTO  #TempPrice (RefId,Price)
+SELECT CDD.RefId, SUM(CAST(ISNULL(InvoiceValue, 0) AS DECIMAL(18, 4)))
+FROM Comm_Export_DocSubmitToBuyerDetails CDD
+GROUP BY CDD.RefId;
+
+----Create Job Table Create ========>>>
+Create Table #TempJobTable(RefId uniqueidentifier, JobNo NVARCHAR(MAX))
+INSERT INTO  #TempJobTable(RefId,JobNo)
+SELECT a.RefId, STRING_AGG(c.JobNo, ',') as JobNo
+FROM Comm_Export_DocSubmitToBuyerDetails a
+LEFT JOIN Comm_Export_ExportInvoiceMaster b ON a.invoiceId = b.ID
+LEFT JOIN Comm_Export_ExportInvoiceDtl c ON c.RefId = b.ID
+WHERE CAST(ISNULL(c.POQty, 0) AS INT) > 0
+GROUP BY a.RefId;
+SELECT
+    a.ID AS BuyerMasterId,
+    b.ID AS SCId,
+    b.Beneficiary AS BeneficiaryId,
+    c.Name AS BeneficiaryName,
+    b.BuyerName AS BuyerId,
+    d.Name AS BuyerName,
+    b.AmenSL AS SCNO,
+    b.Currency AS CurrencyId,
+    e.Currency AS CurrencyName,
+    b.LineBank AS LineBankId,
+    f.BankName AS LineBankName,
+    a.DocSubmitToBuyerNoSys AS DocSubmitToBuyerNoSys,
+    a.SubmissionDate,
+    p.Price,
+	p.RefId,
+	j.JobNo
+
+FROM
+    Comm_Export_DocSubmitToBuyerMaster a
+LEFT JOIN
+    Comm_Export_SalesContract b ON a.SCId = b.ID
+LEFT JOIN
+    HR_Orgination c ON a.Beneficiary = c.ID
+LEFT JOIN
+    MERC_BuyerInformation d ON a.BuyerName = d.ID
+LEFT JOIN
+    Comm_Currency e ON b.Currency = e.ID
+LEFT JOIN
+    Comm_Bank f ON b.LineBank = f.ID
+LEFT JOIN #TempPrice P ON P.RefId=a.ID
+LEFT JOIN #TempJobTable J ON J.RefId=a.ID
+DROP TABLE #TempPrice;
+DROP TABLE #TempJobTable;
+
+
+
+
+# With Query
+WITH CTE_Price AS (
+    SELECT RefId, SUM(CAST(ISNULL(InvoiceValue, 0) AS DECIMAL(18, 4))) AS Price
+    FROM Comm_Export_DocSubmitToBuyerDetails
+    GROUP BY RefId
+),
+CTE_JOB AS (
+ SELECT a.RefId, STRING_AGG(c.JobNo, ', ') AS JobNo
+    FROM Comm_Export_DocSubmitToBuyerDetails a
+    LEFT JOIN Comm_Export_ExportInvoiceMaster b ON a.invoiceId = b.ID
+    LEFT JOIN Comm_Export_ExportInvoiceDtl c ON c.RefId = b.ID
+    WHERE CAST(ISNULL(c.POQty, 0) AS INT) > 0
+    GROUP BY a.RefId
+)
+SELECT
+    a.ID AS BuyerMasterId,
+    b.ID AS SCId,
+    b.Beneficiary AS BeneficiaryId,
+    c.Name AS BeneficiaryName,
+    b.BuyerName AS BuyerId,
+    d.Name AS BuyerName,
+    b.AmenSL AS SCNO,
+    b.Currency AS CurrencyId,
+    e.Currency AS CurrencyName,
+    b.LineBank AS LineBankId,
+    f.BankName AS LineBankName,
+    a.DocSubmitToBuyerNoSys AS DocSubmitToBuyerNoSys,
+    a.SubmissionDate AS SubmissionDate,
+    g.Price AS Price,
+    i.JobNo AS JobNo
+FROM Comm_Export_DocSubmitToBuyerMaster a
+LEFT JOIN Comm_Export_SalesContract b ON a.SCId = b.ID
+LEFT JOIN HR_Orgination c ON a.Beneficiary = c.ID
+LEFT JOIN MERC_BuyerInformation d ON a.BuyerName = d.ID
+LEFT JOIN Comm_Currency e ON b.Currency = e.ID
+LEFT JOIN Comm_Bank f ON b.LineBank = f.ID
+LEFT JOIN CTE_Price g ON g.RefId = a.ID
+LEFT JOIN CTE_JOB i ON i.RefId = a.ID
+WHERE a.ID IN ('7DB4FD22-63D5-4AA5-B81C-DAAF4DFBC18C', '4618736F-5A42-4CCC-8AD7-EC6B05BBBA44')
+ORDER BY CONVERT(DATETIME, a.SubmissionDate, 103);
+		  
+```
 						   
                            
