@@ -308,5 +308,69 @@ WHERE a.ID IN ('7DB4FD22-63D5-4AA5-B81C-DAAF4DFBC18C', '4618736F-5A42-4CCC-8AD7-
 ORDER BY CONVERT(DATETIME, a.SubmissionDate, 103);
 		  
 ```
+
+```
+
+WITH CTE_Requestion AS (
+    SELECT
+        MAX(R.RequisitionId) AS RequisitionId,
+        MAX(R.InternalWorkOrderId) AS InternalWorkOrderId,
+        SUM(RD.RequisitionQuantity) AS RequisitionQuantity
+    FROM inv_Requisition R INNER JOIN inv_RequisitionDetail RD ON RD.RequisitionId = R.RequisitionId
+    GROUP BY R.InternalWorkOrderId   
+),
+CTE_IssueDetail AS (
+    SELECT
+        SUM(SD.IssueQuantity) AS IssueQuantity,
+        MAX(S.RequisitionId) AS RequisitionId
+		,MAX(S.IssueId) AS IssueId
+    FROM inv_StockIssueDetail SD
+    LEFT JOIN inv_StockIssue S ON S.IssueId = SD.IssueId
+    LEFT JOIN CTE_Requestion RR ON RR.RequisitionId = S.RequisitionId
+    GROUP BY S.RequisitionId
+),
+CTE_ProductionTemp AS (
+    SELECT
+        P.ProductionId,
+        SUM(PD.ProductionQuantity) AS ProductionQuantity,
+        SUM(PD.ProductionQtyInRoll) AS ProductionQtyInRoll
+    FROM pro_ProductionDetail PD
+    LEFT JOIN pro_Production P ON P.ProductionId = PD.ProductionId
+    GROUP BY P.ProductionId
+),
+CTE_IWO AS (
+  SELECT
+         MAX(R.InternalWorkOrderId) AS InternalWorkOrderId
+		,SUM(IIF(R.OrderUnitId=2,R.OrderQty,(R.OrderQty / QtyPerRoll)))OrderQty1
+		,SUM(
+			CASE
+				WHEN R.OrderUnitId = 2 THEN R.OrderQty
+				ELSE R.OrderQty / QtyPerRoll
+			END
+) AS OrderQty
+		,MAX(RD.InternalWorkOrderNo) InternalWorkOrderNo
+    FROM inv_InternalWorkOrderDetail R INNER JOIN inv_InternalWorkOrder RD ON RD.InternalWorkOrderId = R.InternalWorkOrderId
+   Where RD.InternalWorkOrderId=163999 GROUP BY R.InternalWorkOrderId  
+)
+SELECT R.InternalWorkOrderId
+,IWO.InternalWorkOrderNo
+,R.RequisitionId
+,D.IssueId
+,A.ProductionId
+,OrderQty
+,IWO.OrderQty1
+,R.RequisitionQuantity
+,D.IssueQuantity
+,A.ProductionQtyInRoll
+,A.ProductionQuantity 
+,Balance=(OrderQty - A.ProductionQtyInRoll)
+FROM pro_Production P
+LEFT JOIN CTE_ProductionTemp A ON A.ProductionId=p.ProductionId
+LEFT JOIN CTE_Requestion    R ON R.InternalWorkOrderId=p.InternalWorkOrderId
+LEFT JOIN CTE_IssueDetail   D  ON D.RequisitionId=R.RequisitionId
+LEFT JOIN CTE_IWO           IWO ON IWO.InternalWorkOrderId=P.InternalWorkOrderId
+Where P.ProductionId=183021 AND OrderQty > (OrderQty - A.ProductionQtyInRoll)  
+
+```
 						   
                            
